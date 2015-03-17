@@ -1,0 +1,197 @@
+/dts-v1/;
+#include "imx6q.dtsi"
+
+/ {
+	model = "Marsboard i.MX6 Dual Board";
+	compatible = "embest,imx6q-marsboard", "fsl,imx6q";
+
+	aliases {
+		mxcfb0 = &mxcfb1;
+		mmc0 = &usdhc2; /* Make external SD /dev/mmcblk0 */
+	};
+
+	memory {
+		reg = <0x10000000 0x40000000>;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		sys_led {
+			gpios = <&gpio3 28 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "heartbeat";
+		};
+
+		user_led {
+			gpios = <&gpio5 2 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	mxcfb1: fb@0 {
+		compatible = "fsl,mxc_sdc_fb";
+		disp_dev = "hdmi";
+		interface_pix_fmt = "RGB24";
+		mode_str ="1920x1080M@60";
+		default_bpp = <24>;
+		int_clk = <0>;
+		late_init = <0>;
+		status = "okay";
+	};
+
+	regulators {
+		compatible = "simple-bus";
+
+		reg_usb_h1_vbus: usb_h1_vbus {
+			compatible = "regulator-fixed";
+			regulator-name = "usb_h1_vbus";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			regulator-always-on;
+		};
+
+		reg_usb_otg_vbus: usb_otg_vbus {
+			compatible = "regulator-fixed";
+			regulator-name = "usb_otg_vbus";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			gpio = <&gpio3 22 0>;
+			/*enable-active-high;*/
+		};
+
+		reg_3p3v: 3p3v {
+			compatible = "regulator-fixed";
+			regulator-name = "3P3V";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+		};
+	};
+
+	sound-hdmi {
+		compatible = "fsl,imx6q-audio-hdmi",
+		"fsl,imx-audio-hdmi";
+		model = "imx-audio-hdmi";
+		hdmi-controller = <&hdmi_audio>;
+	};
+};
+
+&audmux {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_audmux_2>;
+	status = "okay";
+};
+
+&iomuxc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_hog>;
+
+	hog {
+		pinctrl_hog: hoggrp {
+			fsl,pins = <
+				/* SDHC2 */
+				MX6QDL_PAD_GPIO_4__GPIO1_IO04 0x80000000 /* SD2 CD */
+				/* usb otg */
+				MX6QDL_PAD_EIM_D22__GPIO3_IO22 0x80000000 /* USB_OTG_PWR_EN */
+				/* Ethernet */
+				MX6QDL_PAD_EIM_D31__GPIO3_IO31 0x80000000 /* RGMII RST */
+				/* gpio-leds */
+				MX6QDL_PAD_EIM_D28__GPIO3_IO28 0x80000000 /* User LED D25 */
+				MX6QDL_PAD_EIM_A25__GPIO5_IO02 0x80000000 /* User LED D24 */
+			>;
+		};
+	};
+};
+
+&hdmi_audio {
+	status = "okay";
+};
+
+&hdmi_core {
+	ipu_id = <0>;
+	disp_id = <0>;
+	status = "okay";
+};
+
+&hdmi_video {
+	status = "okay";
+};
+
+&ecspi1 {
+	fsl,spi-num-chipselects = <1>;
+	cs-gpios = <&gpio2 30 0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_ecspi1_1>;
+
+	/* NOR-flash */
+	flash: m25p80@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "st,sst25vf016b";
+		spi-max-frequency = <25000000>;
+		reg = <0>; /* CS0 */
+	};
+};
+
+&i2c2 {
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c2_2>;
+	status = "okay";
+
+	hdmi: edid@50 {
+		compatible = "fsl,imx6-hdmi-i2c";
+		reg = <0x50>;
+	};
+};
+
+&fec {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_enet_1>;
+	phy-mode = "rgmii";
+	/*phy-reset-gpios = <&gpio3 31 0 GPIO_ACTIVE_HIGH>;*/
+	status = "okay";
+};
+
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart2_1>;
+	status = "okay";
+};
+
+&usbh1 {
+	vbus-supply = <&reg_usb_h1_vbus>;
+	status = "okay";
+};
+
+&usbotg {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbotg_2>;
+	vbus-supply = <&reg_usb_otg_vbus>;
+	status = "okay";
+};
+
+&usdhc2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc2_2>;
+	cd-gpios = <&gpio1 4 0>;
+	vmmc-supply = <&reg_3p3v>;
+	status = "okay";
+};
+
+/* Disable crypto */
+
+&caam_sm {
+	status = "disabled";
+};
+
+&irq_sec_vio {
+	status = "disabled";
+};
+
+&caam_snvs {
+	status = "disabled";
+};
+
+&crypto {
+	status = "disabled";
+};
